@@ -24,6 +24,15 @@ from pygom.model import ode_utils
 from pygom.model._model_errors import InputError
 from pygom.model.ode_variable import ODEVariable
 
+# Corrections to base_loss.py for initial condition fitting via SquareLoss function by use of target_state optional paramters
+# Performed by John S. McCaskill 5.6.2020 Chemelion Inc.
+# The problem is an error in the target_state index construction, which could be corrected using a list extend instead of append operation
+# The debugging and correction are all commented with lines containing the string 'JSM'
+
+
+JSMDEBUG = False  # to debug the problem above with print statements
+# JSMDEBUG = True
+
 class BaseLoss(object):
     """
     This contains the base that stores all the information of an ode.
@@ -72,6 +81,9 @@ class BaseLoss(object):
             n, p = len(y), 1
         else:
             n, p = y.shape
+
+        if JSMDEBUG:
+            print('JSM debug init class base_loss')
 
         assert len(t) == n, "Number of observations and time must be equal"
 
@@ -129,6 +141,8 @@ class BaseLoss(object):
             self._targetState = None
         else:
             self._targetState = ode_utils.str_or_list(target_state)
+            if JSMDEBUG:
+                print('JSM debug: _tartetState',self._targetState)
 
         # check stuff
         # if you are trying to go through this, I apologize
@@ -1414,16 +1428,22 @@ class BaseLoss(object):
         n_s = self._num_state
         n_p = self._num_param
         if isinstance(state_index, list):
+            if JSMDEBUG:
+                print('JSM debug 1 index_list,state_index,index_out,sorted',index_list,state_index,index_out,np.sort(np.array(index_out)).tolist())
             for j in state_index:
                 for i in index_list:
                     # always ignore the first numState because they are outputs
                     # from the actual ode and not the sensitivities
                     index_out.append(j + (i + 1 + n_p)*n_s)
         else:
+            if JSMDEBUG:
+                print('JSM debug 2 index_list,state_index,index_out,sorted',index_list,state_index,index_out,np.sort(np.array(index_out)).tolist())
             # else, happy times!
             for i in index_list:
                 index_out.append(state_index + (i + 1 + n_p)*n_s)
-
+        if JSMDEBUG:
+            print('JSM debug 3 index_list,state_index,index_out,sorted',index_list,state_index,index_out,np.sort(np.array(index_out)).tolist())
+ 
         return np.sort(np.array(index_out)).tolist()
 
     def _getTargetStateIndex(self):
@@ -1432,12 +1452,21 @@ class BaseLoss(object):
         """
         if self._targetState is None:
             index_list = range(self._num_state)
+            if JSMDEBUG:
+                print('JSM debug _getTargetStateIndex __targetState None index_list',index_list)
         else:
-            index_list = [self._ode.get_state_index(i) for i in self._targetState]
+            # index_list = [self._ode.get_state_index(i) for i in self._targetState]   # original version
+            index_list = list()   # JSM
+            for i in self._targetState:   # JSM
+                index_list.extend(self._ode.get_state_index(i))    # JSM
+            if JSMDEBUG:
+                print('JSM debug _getTargetStateIndex _targetState index_list',self._targetState,index_list)
 
         return index_list
 
     def _setParamInput(self, theta):
+        if JSMDEBUG:
+            print('JSM debug _setParamInput theta',theta)
         if self._targetParam is None:
             if len(theta) != self._num_param:
                 raise InputError("Expecting input to all the parameters")
@@ -1454,6 +1483,8 @@ class BaseLoss(object):
         """
         Set both the parameters and initial condition :math:`x_{0}`
         """
+        if JSMDEBUG:
+            print('JSM debug _setParamStateInput theta',theta)
         if self._targetParam is None and self._targetState is None:
             # we are expecting the standard case here
             if len(theta) != (self._num_state + self._num_param):
@@ -1512,6 +1543,8 @@ class BaseLoss(object):
                     theta = theta[:l1]
                     self._unrollState(x0)
                     self._unrollParam(theta)
+                    if JSMDEBUG:
+                        print('JSM debug at l 1515: x0,theta',x0,theta)
                 else:
                     raise InputError("Input of length " + str(len(theta)) +
                                      ": Expecting input to the parameters " +

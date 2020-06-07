@@ -1,0 +1,9 @@
+
+To install pygom from these local files:
+- in the repo root, run "python setup.py sdist"
+  [this creates a dist directory with a tar file in it called e.g. pygom-0.1.7.dev1+gbbd58f3.tar.gz]
+- then run "pip install" on the tarfile, e.g.:
+  pip install pygom-0.1.7.dev1+gbbd58f3.tar.gz
+
+This should uninstall whatever current pygom, and install the new one.
+
