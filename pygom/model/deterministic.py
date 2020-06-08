@@ -243,7 +243,7 @@ class DeterministicOde(BaseOdeModel):
         A = self.get_ode_eqn()
         B = sympy.zeros(A.rows,2)
         for i in range(A.shape[0]):
-            B[i,0] = sympy.symbols('d' + str(self._stateList[i]) + '/dt=')
+            B[i,0] = sympy.symbols('d' + '{' + str(self._stateList[i]) + '}'+ '/dt=')
             B[i,1] = A[i]
 
         if latex_output:
